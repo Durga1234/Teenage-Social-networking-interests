@@ -1,0 +1,122 @@
+---
+title: "Tennage Behaviour in Social Networking"
+author: "Durga Gaddam"
+date: "October 20, 2016"
+output: pdf_document
+---
+### Objective: 
+
+The main objective of this article is to determine the likeminded teenage people and dividing them into groups according to their tastes. For doing this, we use K-means clustering algorithm.
+
+####K-means:
+
+K-means alogrithm is one of the most wiedly used clustering algorithm for finding patterns in unstructred data.
+
+K means uses formula of Euclidean distance, manhattan distance and Minkowski distance for determining the clusters. Firstly, center of the cluster is determined and the distance from the center of the cluster to each point is determined in order to determine the groups.
+
+####Euclidean distance
+$$\sum_{i=1}^n \sqrt{(y_i-y_{i-1})^2 + (x_i-x_{i-1})^2}$$
+
+#### Manhattan distance
+
+$$ \sum_{i=1}^n |x_i-y_i|$$
+
+#### Minkowski Distance
+
+$$ \sum_{i=1}^n (|x_i-y_i|^c)^{1/c} $$
+
+
+Elbow-Method:
+
+The K-means clustering uses elbow method to measure how the homogeneity and heterogeneity within the clusters change with different values of k
+
+
+####Step-1: Collecting the data
+
+The current data is collected from social network site.
+
+
+```{r}
+setwd("F:/R PRACTICE/SNS")
+
+teens <- read.csv("SNS.csv")
+names(teens)
+
+```
+
+Above columns from basketball to drugs indicated the frequent words used by a person. Most frequent words used by a person are noted and number of times a word repeated in his profile are noted.
+
+#### Step-2 Exploring and preparing the data
+
+```{r}
+str(teens)
+dim(teens)
+
+```
+
+The data set contains 30000 observations and 40 features 
+
+```{r}
+table(teens$gender, useNA = "ifany")
+summary(teens$age)
+```
+The Gender and age columns contains NA values, before proceeding, we need to clean the data.
+
+```{r}
+teens$age <- ifelse(teens$age>=13 & teens$age <20, teens$age, NA)
+summary(teens$age)
+
+```
+####Creating Dummy Variables
+
+```{r}
+teens$female <- ifelse(teens$gender=="F" & !is.na(teens$gender), 1, 0)
+a <- cbind(as.factor(teens$gender), teens$female)
+head(a)
+```
+Here we create two dummy variables female and no_gender, to deal with NA values.
+Gender female is denoted by 1 and other values as 0 in female variable, 
+
+```{r}
+teens$no_gender <- ifelse(is.na(teens$gender),1,0)
+b <- cbind(teens$gender, teens$no_gender)
+head(b)
+```
+NA values are given value 1 in new no_gender variable
+
+```{r}
+table(teens$gender, useNA= "ifany")
+table(teens$female, useNA = "ifany")
+table(teens$no_gender, useNA = "ifany")
+tapply(teens$age,teens$gradyear, mean, na.rm=TRUE )
+
+ave_age <- ave(teens$age, teens$gradyear, FUN = function(x) mean(x,na.rm=TRUE))
+
+teens$age <- ifelse(is.na(teens$age),ave_age, teens$age)
+
+summary(teens$age)
+```
+
+#### Step-3 Training the model and step-4 Evaluating the model 
+
+```{r}
+interests <- teens[5:40]
+interests_z <- as.data.frame(lapply(interests, scale))
+set.seed(2345)
+teen_clusters <- kmeans(interests_z,5)
+teen_clusters$size
+table(teen_clusters$cluster)
+
+teen_clusters$centers
+```
+
+#### Step-5 Improving the model performance
+
+```{r}
+
+teens$cluster <- teen_clusters$cluster
+
+teens[1:5, c("cluster","gender", "age", "friends")]
+aggregate(data=teens, age~cluster,mean)
+aggregate(data=teens, female~cluster,mean)
+```
